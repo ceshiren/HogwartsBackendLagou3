@@ -35,6 +35,19 @@ class TestCase(db.Model):
         return '<TestCase %r>' % self.name
 
 
+# 测试用例表结构定义
+class Task(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    log = db.Column(db.String(1024), unique=False, nullable=True)
+    testcase_id = db.Column(db.Integer, db.ForeignKey('test_case.id'),
+                            nullable=False)
+    testcase = db.relationship('TestCase',
+                               backref=db.backref('tasks', lazy=True))
+
+    def __repr__(self):
+        return '<TestCase %r>' % self.name
+
+
 # 用户管理
 class Main(Resource):
     def get(self):
@@ -95,7 +108,7 @@ class TestCaseApi(Resource):
         """
 
         if request.args.get('id'):
-            testcase=TestCase.query.filter_by(id=request.args.get('id')).first()
+            testcase = TestCase.query.filter_by(id=request.args.get('id')).first()
             if request.json.get('name'):
                 testcase.name = request.json.get('name')
             if request.json.get('data'):
@@ -122,8 +135,29 @@ class TestCaseApi(Resource):
 
 # 任务管理
 class TaskApi(Resource):
+    @jwt_required
     def get(self):
-        return {'hello': 'world'}
+        return [
+            {
+                'id': task.id,
+                'log': task.log,
+                'testcase_id': task.testcase_id
+            } for task in Task.query.all()
+        ]
+
+    @jwt_required
+    def post(self):
+        """
+        /task post 表示新增
+        :return:
+        """
+        task = Task()
+        if request.json.get('log'):
+            task.log = request.json.get('log')
+        if request.json.get('testcase_id'):
+            task.testcase_id = request.json.get('testcase_id')
+        db.session.add(task)
+        db.session.commit()
 
 
 # 报告管理

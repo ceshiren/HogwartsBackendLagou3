@@ -6,7 +6,7 @@ import requests
 
 
 class TestTestCaseApi:
-    url = 'http://127.0.0.1:5000/testcase'
+    url = 'http://127.0.0.1:5000/task'
 
     def setup_class(self):
         r = requests.post('http://127.0.0.1:5000/login', json={
@@ -31,15 +31,15 @@ class TestTestCaseApi:
         assert r.status_code == 200
         assert len(r.json()) >= 0
 
-    def test_testcase_post(self):
+    def test_task_post(self):
         r = requests.post(
             self.url,
             headers={
                 'Authorization': 'Bearer ' + self.token
             },
             json={
-                'name': 'testcase demo name' + str(datetime.datetime.now()),
-                'data': 'click a; click b;'
+                'log': "log"+str(datetime.datetime.now()),
+                'testcase_id': 1
             }
         )
         print(r.text)
@@ -55,39 +55,5 @@ class TestTestCaseApi:
         print(r.text)
         assert r.status_code == 200
         assert len(r.json()) >= 1
-
-    def test_testcase_put(self):
-        r = requests.post(
-            self.url,
-            headers={
-                'Authorization': 'Bearer ' + self.token
-            },
-            params={
-                'id': 1
-            },
-            json={
-                'data': 'click a1; click b2;'
-            }
-        )
-        print(r.text)
-        assert r.status_code == 200
-
-        r = requests.get(
-            self.url,
-            headers={
-                'Authorization': 'Bearer ' + self.token
-            }
-        )
-
-        print(r.text)
-        assert r.status_code == 200
-        #testcase.data vs testcase['data']
-        data=[testcase['data'] for testcase in r.json() if testcase['id'] == 1][0]
-        # for testcase in r.json():
-        #     if testcase.id == 1:
-        #         data=testcase.data
-
-        assert 'b2' in data
-
 
 
