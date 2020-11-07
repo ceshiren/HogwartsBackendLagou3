@@ -23,6 +23,18 @@ class User(db.Model):
         return '<User %r>' % self.username
 
 
+# 测试用例表结构定义
+class TestCase(db.Model):
+    # 可以重新定义表名
+    # __tablename__='test_case'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80), unique=True, nullable=False)
+    data = db.Column(db.String(1024), unique=False, nullable=True)
+
+    def __repr__(self):
+        return '<TestCase %r>' % self.name
+
+
 # 用户管理
 class Main(Resource):
     def get(self):
@@ -66,7 +78,46 @@ class UserApi(Resource):
 class TestCaseApi(Resource):
     @jwt_required
     def get(self):
-        return {'hello': 'world'}
+        return [
+            {
+                'id': testcase.id,
+                'name': testcase.name,
+                'data': testcase.data
+            } for testcase in TestCase.query.all()
+        ]
+
+    @jwt_required
+    def post(self):
+        """
+        /testcase post 表示新增
+        /testcase?id=1 post 表示修改
+        :return:
+        """
+
+        if request.args.get('id'):
+            testcase=TestCase.query.filter_by(id=request.args.get('id')).first()
+            if request.json.get('name'):
+                testcase.name = request.json.get('name')
+            if request.json.get('data'):
+                testcase.data = request.json.get('data')
+            db.session.flush()
+            db.session.commit()
+        else:
+            testcase = TestCase()
+            if request.json.get('name'):
+                testcase.name = request.json.get('name')
+            if request.json.get('data'):
+                testcase.data = request.json.get('data')
+            db.session.add(testcase)
+            db.session.commit()
+
+    @jwt_required
+    def put(self):
+        pass
+
+    @jwt_required
+    def delete(self):
+        pass
 
 
 # 任务管理
