@@ -2,6 +2,7 @@ from flask import Flask, request
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 from flask_restful import Api, Resource
 from flask_sqlalchemy import SQLAlchemy
+from jenkinsapi.jenkins import Jenkins
 
 app = Flask(__name__)
 api = Api(app)
@@ -10,6 +11,12 @@ db = SQLAlchemy(app)
 
 app.config['JWT_SECRET_KEY'] = 'seveniruby token'  # Change this!
 jwt = JWTManager(app)
+
+jenkins = Jenkins(
+    'http://stuq.ceshiren.com:8020/',
+    username='seveniruby',
+    password='11315b2e19bd545b4f6ae16d8643d4ab18'
+)
 
 
 # 数据库结构
@@ -148,16 +155,30 @@ class TaskApi(Resource):
     @jwt_required
     def post(self):
         """
-        /task post 表示新增
+        /task post 表示新增任务，同时执行
+        /task?id=1 结果回传
         :return:
         """
-        task = Task()
-        if request.json.get('log'):
-            task.log = request.json.get('log')
-        if request.json.get('testcase_id'):
-            task.testcase_id = request.json.get('testcase_id')
-        db.session.add(task)
-        db.session.commit()
+        if request.args.get('id'):
+            #todo: 完善测试
+            task=Task.query.filter_by(id=request.args.get('id')).first()
+            if request.json.get('log'):
+                task.log = request.json.get('log')
+
+            db.session.flush()
+            db.session.commit()
+        else:
+            task = Task()
+            if request.json.get('log'):
+                task.log = request.json.get('log')
+            if request.json.get('testcase_id'):
+                task.testcase_id = request.json.get('testcase_id')
+            db.session.add(task)
+            db.session.commit()
+
+            jenkins['lagou3_testcase'].invoke(
+                build_params={'testcase_id': task.testcase_id},
+            )
 
 
 # 报告管理
